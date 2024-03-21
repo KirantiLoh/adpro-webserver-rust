@@ -23,5 +23,12 @@ fn handle_connection(mut stream: TcpStream) {
         .take_while(|line| !line.is_empty())
         .collect();
 
+    let status = "HTTP/1.1 200 OK\r\n\r\n";
+    let content = fs::read_to_string("static/hello.html").unwrap();
+    let length = content.len();
     println!("Request: {:#?}", http_req);
+
+    stream
+        .write_all(format!("{status}\r\nContent-Length: {length}\r\n\r\n{content}").as_bytes())
+        .unwrap();
 }
