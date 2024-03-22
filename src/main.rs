@@ -17,18 +17,15 @@ fn main() {
 fn handle_connection(mut stream: TcpStream) {
     let buf = BufReader::new(&mut stream);
 
-    let http_req: Vec<_> = buf
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
+    let request_line = buf.lines().next().unwrap().unwrap();
 
-    let status = "HTTP/1.1 200 OK\r\n\r\n";
-    let content = fs::read_to_string("static/hello.html").unwrap();
-    let length = content.len();
-    println!("Request: {:#?}", http_req);
-
-    stream
-        .write_all(format!("{status}\r\nContent-Length: {length}\r\n\r\n{content}").as_bytes())
-        .unwrap();
+    let (status, filename) = if request_line == "GET / HTTP/1.1" {
+        ("HTTP/1.1 200 OK\r\n\r\n", "static/hello.html")
+    } else {
+        ("HTTP/1.1 404 NOT FOUND", "static/404.html")
+    };
+    let contents = fs::read_to_string(filename).unwrap();
+    let length = contents.len();
+    let response = format!("{status}\r\nContent-Length: {length}\r\n\r\n{contents}");
+    stream.write_all(response.as_bytes()).unwrap();
 }
